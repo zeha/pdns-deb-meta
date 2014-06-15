@@ -17,18 +17,17 @@ done
 PDNS_DIR=pdns
 rm -rf ${PDNS_DIR} && mkdir ${PDNS_DIR}
 tar -C ${PDNS_DIR} -xf $fn --strip-components=1
-cd ${PDNS_DIR}
 
 # copy the 'good' packaging files over
-rsync -ravH --delete ../pkg-pdns/debian/ debian/
+rsync -ravH --delete pkg-pdns/debian/ pdns/debian/
 
 # no git-buildpackage here
 rm -f debian/gbp.conf
 
-UPSTREAM_VERSION=$(dpkg-parsechangelog -ldebian-pdns/changelog -SVersion)
+UPSTREAM_VERSION=$(dpkg-parsechangelog -l${PDNS_DIR}/debian-pdns/changelog | awk '/^Version/{print $2}')
 
 # fix our changelog
-cat >debian/changelog <<EOT
+cat >${PDNS_DIR}/debian/changelog <<EOT
 pdns (${UPSTREAM_VERSION}-0+autotest) autotest; urgency=medium
 
   * Automated build based on upstream version ${UPSTREAM_VERSION}.
@@ -37,10 +36,7 @@ pdns (${UPSTREAM_VERSION}-0+autotest) autotest; urgency=medium
 EOT
 
 # assume we don't need any patches
-echo>debian/patches/series
-
-# done here
-cd ..
+echo>${PDNS_DIR}/debian/patches/series
 
 # make an orig.tgz
 ln -s $fn pdns_${UPSTREAM_VERSION}.orig.tar.gz
