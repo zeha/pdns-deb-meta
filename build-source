@@ -28,5 +28,5 @@ pdns ($DEB_VERSION) autotest; urgency=medium
 EOT
 
 # go build sources
-dpkg-buildpackage -rfakeroot -d -us -uc -S
+(cd .. && dpkg-source -i -I -p pdns-deb)
 
