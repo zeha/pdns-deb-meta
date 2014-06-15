@@ -24,7 +24,7 @@ rsync -ravH --delete pkg-pdns/debian/ pdns/debian/
 # no git-buildpackage here
 rm -f debian/gbp.conf
 
-UPSTREAM_VERSION=$(dpkg-parsechangelog -l${PDNS_DIR}/debian-pdns/changelog | awk '/^Version/{print $2}')
+UPSTREAM_VERSION=$(dpkg-parsechangelog -l${PDNS_DIR}/debian-pdns/changelog | awk '/^Version/{print $2}' | sed -e 's/-1$//')
 
 # fix our changelog
 cat >${PDNS_DIR}/debian/changelog <<EOT
