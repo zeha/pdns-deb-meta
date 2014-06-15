@@ -1,19 +1,23 @@
 #!/bin/bash
 set -ex
 git clean -fdx
-cd pdns
-git clean -fdx
 
-# reset GIT_COMMIT to the pdns.git commit id
-export GIT_COMMIT=$(git show --pretty=oneline -s | awk '{print $1}')
+REMOTE="https://autotest.powerdns.com/job/auth-git/lastSuccessfulBuild"
 
-# make a version using the upstream scripts
-eval $(build-scripts/make-jenkins-version)
-build-scripts/set-version-auth $SOURCE_VERSION $DEB_VERSION $RPM_VERSION
-build-scripts/set-version-recursor $SOURCE_VERSION $DEB_VERSION $RPM_VERSION
+FILES=$(curl -sk $REMOTE/api/json | python -c "import json, sys; atfcs = json.loads(sys.stdin.read())['artifacts']; print '\n'.join(sorted(set([atfc['relativePath'] for atfc in atfcs])))")
 
-# build a matching tarball
-git archive --prefix=pdns-${DEB_VERSION}/ -o pdns-${DEB_VERSION}.tar.gz HEAD
+for f in $FILES; do
+  fn=$(basename $f)
+  if [[ $fn == pdns*.tar.gz ]] ; then
+    curl -kO "$REMOTE/artifact/$fn"
+    break
+  fi
+done
+
+PDNS_DIR=pdns
+rm -rf ${PDNS_DIR} && mkdir ${PDNS_DIR}
+tar -C ${PDNS_DIR} -xf $fn --strip-components=1
+cd ${PDNS_DIR}
 
 # copy the 'good' packaging files over
 rsync -ravH --delete ../pkg-pdns/debian/ debian/
@@ -21,15 +25,26 @@ rsync -ravH --delete ../pkg-pdns/debian/ debian/
 # no git-buildpackage here
 rm -f debian/gbp.conf
 
+UPSTREAM_VERSION=$(dpkg-parsechangelog -ldebian-pdns/changelog -SVersion)
+
 # fix our changelog
 cat >debian/changelog <<EOT
-pdns (${DEB_VERSION}-1) autotest; urgency=medium
+pdns (${UPSTREAM_VERSION}-0+autotest) autotest; urgency=medium
 
-  * Automated build based on git commit $GIT_COMMIT.
+  * Automated build based on upstream version ${UPSTREAM_VERSION}.
 
  -- Namespace Autobuild <inhuman@namespace.at>  $(date --rfc-2822)
 EOT
 
+# assume we don't need any patches
+echo>debian/patches/series
+
+# done here
+cd ..
+
+# make an orig.tgz
+ln -s $fn pdns_${UPSTREAM_VERSION}.orig.tar.gz
+
 # go build debian sources
-(cd .. && dpkg-source -i -I -b pdns)
+dpkg-source -i -I -b ${PDNS_DIR}
 
