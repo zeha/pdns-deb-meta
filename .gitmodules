@@ -1,0 +1,6 @@
+[submodule "pdns"]
+	path = pdns
+	url = https://github.com/PowerDNS/pdns.git
+[submodule "pkg-pdns"]
+	path = pkg-pdns
+	url = https://alioth.debian.org/anonscm/git/pkg-pdns/pdns.git
