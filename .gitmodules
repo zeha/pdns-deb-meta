@@ -1,3 +1,4 @@
 [submodule "pkg-pdns"]
 	path = pkg-pdns
-	url = https://alioth.debian.org/anonscm/git/pkg-pdns/pdns.git
+	url = https://github.com/zeha/pdns-deb.git
+	branch = next
