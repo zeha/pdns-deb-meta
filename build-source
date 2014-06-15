@@ -7,9 +7,6 @@ cd pdns
 # no git-buildpackage here
 rm -f debian/gbp.conf
 
-# fake native package
-echo '3.0 (native)' > debian/source/format
-
 # reset GIT_COMMIT to the pdns.git commit id
 export GIT_COMMIT=$(git show --pretty=oneline -s | awk '{print $1}')
 
@@ -20,7 +17,7 @@ build-scripts/set-version-recursor $SOURCE_VERSION $DEB_VERSION $RPM_VERSION
 
 # fix our changelog
 cat >debian/changelog <<EOT
-pdns ($DEB_VERSION) autotest; urgency=medium
+pdns (${DEB_VERSION}-1) autotest; urgency=medium
 
   * Automated build based on git commit $GIT_COMMIT.
 
