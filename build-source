@@ -2,8 +2,13 @@
 set -ex
 (cd pdns && git clean -fdx)
 rsync -ravH --delete pkg-pdns/debian/ pdns/debian/
-cd pdns
+pushd pdns
 rm -f debian/gbp.conf
 git add -A debian
 git commit -a -m 'Automated update of debian/ tree'
+export GIT_COMMIT=$(git show --format=oneline | awk '{print $1}')
+popd
+export SKIP_GIT_CLEANUP=true
+export SOURCE_DIRECTORY=pdns-deb-meta/pdns
+/usr/bin/generate-git-snapshot
 
