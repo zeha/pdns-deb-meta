@@ -1,11 +1,8 @@
 #!/bin/bash
 set -ex
-(cd pdns && git clean -fdx)
-rsync -ravH --delete pkg-pdns/debian/ pdns/debian/
+git clean -fdx
 cd pdns
-
-# no git-buildpackage here
-rm -f debian/gbp.conf
+git clean -fdx
 
 # reset GIT_COMMIT to the pdns.git commit id
 export GIT_COMMIT=$(git show --pretty=oneline -s | awk '{print $1}')
@@ -14,6 +11,15 @@ export GIT_COMMIT=$(git show --pretty=oneline -s | awk '{print $1}')
 eval $(build-scripts/make-jenkins-version)
 build-scripts/set-version-auth $SOURCE_VERSION $DEB_VERSION $RPM_VERSION
 build-scripts/set-version-recursor $SOURCE_VERSION $DEB_VERSION $RPM_VERSION
+
+# build a matching tarball
+git archive --prefix=pdns-${DEB_VERSION}/ -o pdns-${DEB_VERSION}.tar.gz HEAD
+
+# copy the 'good' packaging files over
+rsync -ravH --delete ../pkg-pdns/debian/ debian/
+
+# no git-buildpackage here
+rm -f debian/gbp.conf
 
 # fix our changelog
 cat >debian/changelog <<EOT
@@ -24,6 +30,6 @@ pdns (${DEB_VERSION}-1) autotest; urgency=medium
  -- Namespace Autobuild <inhuman@namespace.at>  $(date --rfc-2822)
 EOT
 
-# go build sources
+# go build debian sources
 (cd .. && dpkg-source -i -I -b pdns)
 
