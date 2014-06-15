@@ -1,0 +1,9 @@
+#!/bin/bash
+set -ex
+rsync -ravH --delete pkg-pdns/debian/ pdns/debian/
+cd pdns
+git clean -fdx
+rm -f debian/gbp.conf
+git add -A debian
+git commit -a -m 'Automated update of debian/ tree'
+
