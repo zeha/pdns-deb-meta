@@ -2,7 +2,9 @@
 set -ex
 git clean -fdx
 
-REMOTE="https://autotest.powerdns.com/job/auth-git/lastSuccessfulBuild"
+PDNS_BUILD_ID="${PDNS_BUILD_ID:-lastSuccessfulBuild}"
+
+REMOTE="https://autotest.powerdns.com/job/auth-git/${PDNS_BUILD_ID}"
 
 FILES=$(curl -sk $REMOTE/api/json | python -c "import json, sys; atfcs = json.loads(sys.stdin.read())['artifacts']; print '\n'.join(sorted(set([atfc['relativePath'] for atfc in atfcs])))")
 
