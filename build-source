@@ -1,6 +1,7 @@
 #!/bin/bash
 set -ex
 git clean -fdx
+git submodule update --remote
 
 PDNS_BUILD_ID="${PDNS_BUILD_ID:-lastSuccessfulBuild}"
 
