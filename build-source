@@ -1,13 +1,25 @@
 #!/bin/bash
 set -ex
 
-UPSTREAM_JOB="auth-git"
-PKG_NAME="pdns"
-PKG_DIR="pkg-pdns"
-TAR_FORMAT="tar.gz"
-get_version() {
-  dpkg-parsechangelog -l${PKG_NAME}/debian-pdns/changelog | awk '/^Version/{print $2}' | sed -e 's/-1$//'
-}
+if [[ "${JOB_NAME}" == pdns-recursor* ]]; then
+  UPSTREAM_JOB="recursor-git"
+  UPSTREAM_SOURCE_SUBDIR="pdns/"
+  PKG_NAME="pdns-recursor"
+  PKG_DIR="pkg-pdns-recursor"
+  TAR_FORMAT="tar.bz2"
+  get_version() {
+    grep VERSION ${PKG_NAME}/config.h | awk '{print $3}' | sed -e 's/"//g'
+  }
+else
+  UPSTREAM_JOB="auth-git"
+  UPSTREAM_SOURCE_SUBDIR=""
+  PKG_NAME="pdns"
+  PKG_DIR="pkg-pdns"
+  TAR_FORMAT="tar.gz"
+  get_version() {
+    dpkg-parsechangelog -l${PKG_NAME}/debian-pdns/changelog | awk '/^Version/{print $2}' | sed -e 's/-1$//'
+  }
+fi
 
 download_source() {
   PDNS_BUILD_ID="${PDNS_BUILD_ID:-lastSuccessfulBuild}"
@@ -17,7 +29,7 @@ download_source() {
   for f in $FILES; do
     fn=$(basename $f)
     if [[ $fn == pdns*.tar* ]] ; then
-      curl -kO "$REMOTE/artifact/$fn"
+      curl -kO "$REMOTE/artifact/${UPSTREAM_SOURCE_SUBDIR}$fn"
       break
     fi
   done
@@ -38,6 +50,10 @@ rsync -ravH --delete ${PKG_DIR}/debian/ ${PKG_NAME}/debian/
 rm -f debian/gbp.conf
 
 UPSTREAM_VERSION=$(get_version)
+# Mangle the upstream version into an acceptable format (needs to start with a digit)
+if [ -z "$(echo ${UPSTREAM_VERSION} | egrep '^[0-9]')" ]; then
+  UPSTREAM_VERSION="0.0-${UPSTREAM_VERSION}"
+fi
 
 # fix our changelog
 cat >${PKG_NAME}/debian/changelog <<EOT
