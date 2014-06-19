@@ -2,3 +2,7 @@
 	path = pkg-pdns
 	url = https://github.com/zeha/pdns-deb.git
 	branch = next
+[submodule "pkg-pdns-recursor"]
+	path = pkg-pdns-recursor
+	url = https://github.com/zeha/pdns-recursor-deb.git
+	branch = next
