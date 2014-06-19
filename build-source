@@ -1,37 +1,47 @@
 #!/bin/bash
 set -ex
+
+UPSTREAM_JOB="auth-git"
+PKG_NAME="pdns"
+PKG_DIR="pkg-pdns"
+TAR_FORMAT="tar.gz"
+get_version() {
+  dpkg-parsechangelog -l${PKG_NAME}/debian-pdns/changelog | awk '/^Version/{print $2}' | sed -e 's/-1$//'
+}
+
+download_source() {
+  PDNS_BUILD_ID="${PDNS_BUILD_ID:-lastSuccessfulBuild}"
+  local REMOTE="https://autotest.powerdns.com/job/${UPSTREAM_JOB}/${PDNS_BUILD_ID}"
+  local FILES=$(curl -sk $REMOTE/api/json | python -c "import json, sys; atfcs = json.loads(sys.stdin.read())['artifacts']; print '\n'.join(sorted(set([atfc['relativePath'] for atfc in atfcs])))")
+  local f
+  for f in $FILES; do
+    fn=$(basename $f)
+    if [[ $fn == pdns*.tar* ]] ; then
+      curl -kO "$REMOTE/artifact/$fn"
+      break
+    fi
+  done
+}
+
 git clean -fdx
 git submodule update --remote
 
-PDNS_BUILD_ID="${PDNS_BUILD_ID:-lastSuccessfulBuild}"
+download_source
 
-REMOTE="https://autotest.powerdns.com/job/auth-git/${PDNS_BUILD_ID}"
-
-FILES=$(curl -sk $REMOTE/api/json | python -c "import json, sys; atfcs = json.loads(sys.stdin.read())['artifacts']; print '\n'.join(sorted(set([atfc['relativePath'] for atfc in atfcs])))")
-
-for f in $FILES; do
-  fn=$(basename $f)
-  if [[ $fn == pdns*.tar.gz ]] ; then
-    curl -kO "$REMOTE/artifact/$fn"
-    break
-  fi
-done
-
-PDNS_DIR=pdns
-rm -rf ${PDNS_DIR} && mkdir ${PDNS_DIR}
-tar -C ${PDNS_DIR} -xf $fn --strip-components=1
+rm -rf ${PKG_NAME} && mkdir ${PKG_NAME}
+tar -C ${PKG_NAME} -xf $fn --strip-components=1
 
 # copy the 'good' packaging files over
-rsync -ravH --delete pkg-pdns/debian/ pdns/debian/
+rsync -ravH --delete ${PKG_DIR}/debian/ ${PKG_NAME}/debian/
 
 # no git-buildpackage here
 rm -f debian/gbp.conf
 
-UPSTREAM_VERSION=$(dpkg-parsechangelog -l${PDNS_DIR}/debian-pdns/changelog | awk '/^Version/{print $2}' | sed -e 's/-1$//')
+UPSTREAM_VERSION=$(get_version)
 
 # fix our changelog
-cat >${PDNS_DIR}/debian/changelog <<EOT
-pdns (${UPSTREAM_VERSION}-0+autotest) autotest; urgency=medium
+cat >${PKG_NAME}/debian/changelog <<EOT
+${PKG_NAME} (${UPSTREAM_VERSION}-0+autotest) autotest; urgency=medium
 
   * Automated build based on upstream version ${UPSTREAM_VERSION}.
 
@@ -39,11 +49,11 @@ pdns (${UPSTREAM_VERSION}-0+autotest) autotest; urgency=medium
 EOT
 
 # assume we don't need any patches
-echo>${PDNS_DIR}/debian/patches/series
+echo>${PKG_NAME}/debian/patches/series
 
 # make an orig.tgz
-ln -s $fn pdns_${UPSTREAM_VERSION}.orig.tar.gz
+ln -s $fn ${PKG_NAME}_${UPSTREAM_VERSION}.orig.${TAR_FORMAT}
 
 # go build debian sources
-dpkg-source -i -I -b ${PDNS_DIR}
+dpkg-source -i -I -b ${PKG_NAME}
 
