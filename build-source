@@ -15,7 +15,7 @@ else
   UPSTREAM_SOURCE_SUBDIR=""
   PKG_NAME="pdns"
   PKG_DIR="pkg-pdns"
-  TAR_FORMAT="tar.gz"
+  TAR_FORMAT="tar.bz2"
   get_version() {
     dpkg-parsechangelog -l${PKG_NAME}/debian-pdns/changelog | awk '/^Version/{print $2}' | sed -e 's/-1$//'
   }
