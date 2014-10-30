@@ -17,7 +17,7 @@ else
   PKG_DIR="pkg-pdns"
   TAR_FORMAT="tar.bz2"
   get_version() {
-    dpkg-parsechangelog -l${PKG_NAME}/debian-pdns/changelog | awk '/^Version/{print $2}' | sed -e 's/-1$//'
+    dpkg-parsechangelog -l${PKG_NAME}/debian/changelog | awk '/^Version/{print $2}' | sed -e 's/-1$//'
   }
 fi
 
